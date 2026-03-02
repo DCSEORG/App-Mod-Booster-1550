@@ -1,0 +1,64 @@
+# .gitignore for Expense Management App
+
+# ─── .NET ─────────────────────────────────────────────────────────────────────
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+publish/
+
+## Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/
+!**/[Pp]ackages/build/
+
+## Rider
+.idea/
+
+## VS Code
+.vscode/
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.bak
+
+# ─── Azure / Deployment ───────────────────────────────────────────────────────
+# NOTE: *.zip files are intentionally NOT excluded
+# app.zip must be committed for use in deployment scripts
+local.settings.json
+
+# ─── Secrets ──────────────────────────────────────────────────────────────────
+appsettings.Development.json
+*.pfx
+*.p12

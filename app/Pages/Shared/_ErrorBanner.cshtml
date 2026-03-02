@@ -1,0 +1,16 @@
+@{
+    var errorMessage = ViewData["ErrorMessage"] as string;
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="error-banner @(errorMessage.Contains("Managed Identity") ? "error-critical" : "")">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+            <div>
+                <strong>⚠️ Database Connection Issue — Showing Demo Data</strong>
+                <div class="mt-1">@errorMessage</div>
+            </div>
+        </div>
+    </div>
+}
