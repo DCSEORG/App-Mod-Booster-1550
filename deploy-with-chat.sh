@@ -130,33 +130,35 @@ echo ""
 echo "Step 6: Installing Python packages..."
 pip3 install --quiet pyodbc azure-identity
 
-# Step 7: Update Python scripts with actual server values
+# Step 7: Create temp copies of Python scripts with actual server values
+# (originals are kept as templates with REPLACE_SERVER placeholder)
 echo ""
-echo "Step 7: Updating Python scripts with deployment values..."
-sed -i.bak "s/REPLACE_SERVER/$SQL_SERVER_NAME/g" run-sql.py && rm -f run-sql.py.bak
-sed -i.bak "s/REPLACE_SERVER/$SQL_SERVER_NAME/g" run-sql-dbrole.py && rm -f run-sql-dbrole.py.bak
-sed -i.bak "s/REPLACE_SERVER/$SQL_SERVER_NAME/g" run-sql-stored-procs.py && rm -f run-sql-stored-procs.py.bak
+echo "Step 7: Preparing Python scripts with deployment values..."
+cp run-sql.py /tmp/run-sql-deploy.py
+cp run-sql-dbrole.py /tmp/run-sql-dbrole-deploy.py
+cp run-sql-stored-procs.py /tmp/run-sql-stored-procs-deploy.py
+sed -i.bak "s/REPLACE_SERVER/$SQL_SERVER_NAME/g" /tmp/run-sql-deploy.py && rm -f /tmp/run-sql-deploy.py.bak
+sed -i.bak "s/REPLACE_SERVER/$SQL_SERVER_NAME/g" /tmp/run-sql-dbrole-deploy.py && rm -f /tmp/run-sql-dbrole-deploy.py.bak
+sed -i.bak "s/REPLACE_SERVER/$SQL_SERVER_NAME/g" /tmp/run-sql-stored-procs-deploy.py && rm -f /tmp/run-sql-stored-procs-deploy.py.bak
 
 # Step 8: Import database schema
 echo ""
 echo "Step 8: Importing database schema..."
-python3 run-sql.py
+python3 /tmp/run-sql-deploy.py
 
 # Step 9: Configure database roles for managed identity
 echo ""
 echo "Step 9: Configuring database roles for managed identity..."
 # Use a temporary copy of script.sql to keep the original template intact
-cp script.sql script.sql.run
-sed -i.bak "s/MANAGED-IDENTITY-NAME/$MANAGED_IDENTITY_NAME/g" script.sql.run && rm -f script.sql.run.bak
-sed -i.bak 's|SQL_SCRIPT_FILE = "script.sql"|SQL_SCRIPT_FILE = "script.sql.run"|' run-sql-dbrole.py && rm -f run-sql-dbrole.py.bak
-python3 run-sql-dbrole.py
-sed -i.bak 's|SQL_SCRIPT_FILE = "script.sql.run"|SQL_SCRIPT_FILE = "script.sql"|' run-sql-dbrole.py && rm -f run-sql-dbrole.py.bak
-rm -f script.sql.run
+cp script.sql /tmp/script-deploy.sql
+sed -i.bak "s/MANAGED-IDENTITY-NAME/$MANAGED_IDENTITY_NAME/g" /tmp/script-deploy.sql && rm -f /tmp/script-deploy.sql.bak
+sed -i.bak 's|SQL_SCRIPT_FILE = "script.sql"|SQL_SCRIPT_FILE = "/tmp/script-deploy.sql"|' /tmp/run-sql-dbrole-deploy.py && rm -f /tmp/run-sql-dbrole-deploy.py.bak
+python3 /tmp/run-sql-dbrole-deploy.py
 
 # Step 10: Deploy stored procedures
 echo ""
 echo "Step 10: Deploying stored procedures..."
-python3 run-sql-stored-procs.py
+python3 /tmp/run-sql-stored-procs-deploy.py
 
 # Step 11: Build and deploy application
 echo ""

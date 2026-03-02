@@ -7,6 +7,8 @@ import struct
 from azure.identity import AzureCliCredential
 
 # Database connection settings
+# NOTE: REPLACE_SERVER is a template placeholder substituted by deploy.sh / deploy-with-chat.sh
+# at deployment time using a temp copy. The original file is never modified.
 SERVER = "REPLACE_SERVER.database.windows.net"
 DATABASE = "Northwind"
 SQL_SCRIPT_FILE = "stored-procedures.sql"
