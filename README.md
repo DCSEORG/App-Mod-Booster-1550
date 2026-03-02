@@ -15,3 +15,32 @@ Steps to modernise an app:
 
 Supporting slides for Microsoft Employees:
 [Here](<https://microsofteur-my.sharepoint.com/:p:/g/personal/dchisholm_microsoft_com/IQAY41LQ12fjSIfFz3ha4hfFAZc7JQQuWaOrF7ObgxRK6f4?e=p6arJs>)
+
+---
+
+## For Contributors / Coding Agents — Git Push Token Fix
+
+### The Problem
+When running `git push` directly inside the coding agent's bash tool, the push fails with an error like:
+
+```
+remote: Permission to DCSEORG/App-Mod-Booster-1550.git denied to <username>.
+fatal: unable to access '...': The requested URL returned error: 403
+```
+
+**Why this happens:** The `GITHUB_TOKEN` environment variable available to the bash shell is a personal OAuth token (prefixed `ghu_`) that only has **read** access to the repository. It cannot push.
+
+### The Fix
+The GitHub MCP server holds a **separate** app installation token (prefixed `ghs_`, belonging to `copilot-swe-agent[bot]`) that **does** have write access. This token is never exposed as an environment variable — it is only accessible through the MCP tool layer.
+
+**Always use the `report_progress` tool to commit and push changes.** It internally uses the correct `ghs_` installation token and will succeed where a bare `git push` in bash fails.
+
+```
+# ❌ This will fail with a 403 / "denied" error:
+git push origin my-branch
+
+# ✅ This works — use the report_progress MCP tool instead.
+# It runs git add, git commit, and git push using the correct token automatically.
+```
+
+If you already have local commits that haven't been pushed yet, call `report_progress` with any description update to trigger the push via the correct token. Do **not** attempt to extract tokens from process environments or `.git/config` as a workaround.

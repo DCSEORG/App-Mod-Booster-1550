@@ -1,0 +1,188 @@
+@page
+@model ExpenseApp.Pages.ChatModel
+@{
+    ViewData["Title"] = "AI Assistant";
+    ViewData["Page"] = "Chat";
+    Layout = "Shared/_Layout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card data-card" style="height: calc(100vh - 200px); display: flex; flex-direction: column;">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-robot text-primary fs-5"></i>
+                <span class="fw-semibold">Expense Management AI Assistant</span>
+                <span class="ms-auto badge bg-primary-subtle text-primary small">Powered by Azure OpenAI</span>
+            </div>
+
+            <!-- Chat messages area -->
+            <div id="chatMessages" class="flex-grow-1 overflow-auto p-3" style="background: #f9fafb;">
+                <div class="chat-message assistant mb-3">
+                    <div class="d-flex gap-2 align-items-start">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:32px;height:32px;font-size:0.85rem;">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <div class="chat-bubble p-3 rounded-3" style="background:#fff;max-width:80%;box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+                            <p class="mb-0 small">Hello! I'm your expense management assistant. I can help you:</p>
+                            <ul class="mt-2 mb-0 small">
+                                <li>List and filter expenses</li>
+                                <li>View user information</li>
+                                <li>Create new expenses</li>
+                                <li>Approve or reject submitted expenses</li>
+                            </ul>
+                            <p class="mt-2 mb-0 small text-muted">What would you like to do?</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div class="card-footer bg-white p-3 border-top">
+                <div class="d-flex gap-2">
+                    <input type="text" id="userInput" class="form-control"
+                           placeholder="Ask me anything about expenses... (e.g. 'Show me all submitted expenses')"
+                           onkeydown="if(event.key==='Enter') sendMessage();" />
+                    <button class="btn btn-primary px-4" onclick="sendMessage()" id="sendBtn">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+                <div class="mt-2 d-flex gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="quickAsk('Show me all submitted expenses')">
+                        Submitted expenses
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="quickAsk('List all users')">
+                        List users
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="quickAsk('Show approved expenses total value')">
+                        Approved total
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let conversationHistory = [];
+
+    function formatMessage(text) {
+        // Escape HTML first to prevent XSS
+        const escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+
+        // Apply markdown-style formatting after escaping
+        return escaped
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^(\d+\.\s.+)$/gm, '<li>$1</li>')
+            .replace(/^[-*]\s(.+)$/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+                if (match.includes('<li>1.') || /^<li>\d+/.test(match))
+                    return '<ol>' + match + '</ol>';
+                return '<ul>' + match + '</ul>';
+            })
+            .replace(/```([\s\S]*?)```/g, '<pre class="bg-light p-2 rounded small">$1</pre>')
+            .replace(/\n/g, '<br>');
+    }
+
+    function appendMessage(role, content) {
+        const container = document.getElementById('chatMessages');
+        const isUser = role === 'user';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `chat-message ${role} mb-3`;
+        wrapper.innerHTML = isUser
+            ? `<div class="d-flex gap-2 align-items-start justify-content-end">
+                <div class="chat-bubble p-3 rounded-3 small" style="background:#4f46e5;color:#fff;max-width:80%;">
+                    ${formatMessage(content)}
+                </div>
+                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:32px;height:32px;font-size:0.85rem;"><i class="bi bi-person"></i></div>
+               </div>`
+            : `<div class="d-flex gap-2 align-items-start">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:32px;height:32px;font-size:0.85rem;"><i class="bi bi-robot"></i></div>
+                <div class="chat-bubble p-3 rounded-3 small" style="background:#fff;max-width:80%;box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+                    ${formatMessage(content)}
+                </div>
+               </div>`;
+
+        container.appendChild(wrapper);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function appendTypingIndicator() {
+        const container = document.getElementById('chatMessages');
+        const div = document.createElement('div');
+        div.id = 'typingIndicator';
+        div.className = 'chat-message assistant mb-3';
+        div.innerHTML = `<div class="d-flex gap-2 align-items-start">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:32px;height:32px;font-size:0.85rem;"><i class="bi bi-robot"></i></div>
+            <div class="chat-bubble p-3 rounded-3 small" style="background:#fff;box-shadow:0 1px 2px rgba(0,0,0,0.06);">
+                <span class="text-muted">Thinking...</span>
+                <span class="spinner-border spinner-border-sm ms-2" role="status"></span>
+            </div>
+        </div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const el = document.getElementById('typingIndicator');
+        if (el) el.remove();
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('userInput');
+        const message = input.value.trim();
+        if (!message) return;
+
+        input.value = '';
+        document.getElementById('sendBtn').disabled = true;
+
+        appendMessage('user', message);
+        appendTypingIndicator();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: message,
+                    history: conversationHistory
+                })
+            });
+
+            const data = await response.json();
+            removeTypingIndicator();
+
+            const reply = data.response || 'Sorry, I could not process that request.';
+            appendMessage('assistant', reply);
+
+            conversationHistory.push({ role: 'user', content: message });
+            conversationHistory.push({ role: 'assistant', content: reply });
+
+            // Keep history manageable (last 10 exchanges)
+            if (conversationHistory.length > 20)
+                conversationHistory = conversationHistory.slice(-20);
+
+        } catch (err) {
+            removeTypingIndicator();
+            appendMessage('assistant', '⚠️ Error connecting to the AI service. Please try again.');
+        } finally {
+            document.getElementById('sendBtn').disabled = false;
+            input.focus();
+        }
+    }
+
+    function quickAsk(text) {
+        document.getElementById('userInput').value = text;
+        sendMessage();
+    }
+</script>
+}

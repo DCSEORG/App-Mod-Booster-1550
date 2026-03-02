@@ -1,0 +1,143 @@
+@page
+@model ExpenseApp.Pages.ExpenseDetailModel
+@{
+    ViewData["Title"] = Model.Expense == null ? "Expense Not Found" : $"Expense #{Model.Expense.ExpenseId}";
+    ViewData["Page"] = "Dashboard";
+    Layout = "Shared/_Layout";
+}
+
+@if (Model.Expense == null)
+{
+    <div class="alert alert-warning">Expense not found. <a href="/Index">Back to Dashboard</a></div>
+}
+else
+{
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card data-card mb-3">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0">Expense Details</h5>
+                    <a href="/Index" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" asp-page-handler="Update">
+                        <input type="hidden" name="expenseId" value="@Model.Expense.ExpenseId" />
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Employee</label>
+                                <input type="text" class="form-control" value="@Model.Expense.UserName" disabled />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Status</label>
+                                @{
+                                    var badgeCss = Model.Expense.StatusName switch
+                                    {
+                                        "Draft"     => "badge-draft",
+                                        "Submitted" => "badge-submitted",
+                                        "Approved"  => "badge-approved",
+                                        "Rejected"  => "badge-rejected",
+                                        _           => "badge-draft"
+                                    };
+                                }
+                                <div class="mt-1">
+                                    <span class="badge-status @badgeCss fs-6">@Model.Expense.StatusName</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Category</label>
+                                <select name="categoryId" class="form-select">
+                                    @foreach (var c in Model.Categories)
+                                    {
+                                        <option value="@c.CategoryId" selected="@(Model.Expense.CategoryId == c.CategoryId)">@c.CategoryName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Amount (£)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" name="amountGBP" class="form-control"
+                                           step="0.01" min="0.01"
+                                           value="@Model.Expense.AmountGBP.ToString("F2")" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Date</label>
+                                <input type="date" name="expenseDate" class="form-control"
+                                       value="@Model.Expense.ExpenseDate.ToString("yyyy-MM-dd")" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">Receipt File</label>
+                                <input type="text" name="receiptFile" class="form-control"
+                                       value="@Model.Expense.ReceiptFile" placeholder="Path or URL" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium">Description</label>
+                                <textarea name="description" class="form-control" rows="3">@Model.Expense.Description</textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>Save Changes
+                            </button>
+                            @if (Model.Expense.StatusName == "Draft")
+                            {
+                                <form method="post" asp-page-handler="Submit" style="display:inline;">
+                                    <input type="hidden" name="expenseId" value="@Model.Expense.ExpenseId" />
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="bi bi-send me-1"></i>Submit for Approval
+                                    </button>
+                                </form>
+                            }
+                            @if (Model.Expense.StatusName == "Submitted")
+                            {
+                                <form method="post" asp-page-handler="Approve" style="display:inline;">
+                                    <input type="hidden" name="expenseId" value="@Model.Expense.ExpenseId" />
+                                    <input type="hidden" name="reviewedBy" value="2" />
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-check-lg me-1"></i>Approve
+                                    </button>
+                                </form>
+                                <form method="post" asp-page-handler="Reject" style="display:inline;">
+                                    <input type="hidden" name="expenseId" value="@Model.Expense.ExpenseId" />
+                                    <input type="hidden" name="reviewedBy" value="2" />
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-x-lg me-1"></i>Reject
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card data-card">
+                <div class="card-header"><h6 class="mb-0">Audit Trail</h6></div>
+                <div class="card-body p-3">
+                    <dl class="mb-0 small">
+                        <dt class="text-muted">Created</dt>
+                        <dd>@Model.Expense.CreatedAt.ToString("dd MMM yyyy HH:mm")</dd>
+                        @if (Model.Expense.SubmittedAt.HasValue)
+                        {
+                            <dt class="text-muted">Submitted</dt>
+                            <dd>@Model.Expense.SubmittedAt.Value.ToString("dd MMM yyyy HH:mm")</dd>
+                        }
+                        @if (Model.Expense.ReviewedAt.HasValue)
+                        {
+                            <dt class="text-muted">Reviewed by</dt>
+                            <dd>@Model.Expense.ReviewerName</dd>
+                            <dt class="text-muted">Reviewed at</dt>
+                            <dd>@Model.Expense.ReviewedAt.Value.ToString("dd MMM yyyy HH:mm")</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+}
