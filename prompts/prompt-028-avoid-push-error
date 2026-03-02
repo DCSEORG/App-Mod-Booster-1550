@@ -1,5 +1,21 @@
-When the git push command fails with an error like "denied to <username>", it means the GITHUB_TOKEN environment variable holds a personal OAuth ghu_ token that lacks write access to the repository. The GitHub MCP server uses a different token — a ghs_ app installation token belonging to copilot-swe-agent[bot] — which does have write access.
+IMPORTANT — READ THIS BEFORE MAKING ANY CHANGES OR COMMITS.
 
-Do not try to use git push directly via the bash tool. Instead, always use the report_progress tool to commit and push changes. The report_progress tool internally uses the correct app installation token that the MCP server has access to, so it will always succeed where a bare git push in bash would fail.
+You are working inside a GitHub coding agent environment where TWO different tokens exist and they are NOT interchangeable:
 
-If you find yourself in a state where you have local commits that haven't been pushed, use report_progress (even with a minimal description update) to trigger the push via the correct token. Do not attempt workarounds like extracting tokens from process environments.
+1. GITHUB_TOKEN environment variable (bash shell) — a personal OAuth token prefixed "ghu_".
+   This token has READ-ONLY access. It CANNOT push to the repository.
+   Running "git push" in bash WILL FAIL with "denied to <username> / 403" every time.
+
+2. MCP server token — an app installation token prefixed "ghs_" belonging to copilot-swe-agent[bot].
+   This token has WRITE access. It is NEVER exposed as an environment variable.
+   It is ONLY accessible through the report_progress MCP tool.
+
+RULES — follow these for the entire session without exception:
+
+- NEVER run "git push" in the bash tool. It will always fail.
+- NEVER run "git commit" in the bash tool and then try to push separately. Use report_progress instead.
+- ALWAYS use the report_progress tool to stage, commit, and push changes. It uses the correct token automatically.
+- If you have already made local commits that have not been pushed, call report_progress (even with a small description update) to push them via the correct token.
+- Do NOT attempt to work around this by reading tokens from environment variables, .git/config, or process memory.
+
+WHY this prompt is listed first: in a previous session this prompt was placed last in prompt-order, so the agent read it only after the push had already failed. That is why it is now first — so the rule is established before any work begins.

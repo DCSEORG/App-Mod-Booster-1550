@@ -1,5 +1,6 @@
 This is the order in which the coding agent should read and work on the prompts:
 
+prompt-028-avoid-push-error,
 prompt-006-baseline-script-instruction,
 prompt-001-create-app-service,
 prompt-017-create-managed-identity,
@@ -20,8 +21,7 @@ prompt-018-extra-genai-instructions,
 prompt-025-clientid-for-chat,
 prompt-019-chatui-deploy-file,
 prompt-011-azure-services-diagram,
-prompt-023-deployment-order-considerations,
-prompt-028-avoid-push-error
+prompt-023-deployment-order-considerations
 
 
 
